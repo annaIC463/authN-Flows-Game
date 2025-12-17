@@ -1,0 +1,12 @@
+{
+  "/_global-error/page": "/_global-error",
+  "/_not-found/page": "/_not-found",
+  "/authorization-code/page": "/authorization-code",
+  "/authorization-code/platformer/page": "/authorization-code/platformer",
+  "/authorization-code/simulation/page": "/authorization-code/simulation",
+  "/client-credentials/page": "/client-credentials",
+  "/client-credentials/platformer/page": "/client-credentials/platformer",
+  "/client-credentials/simulation/page": "/client-credentials/simulation",
+  "/page": "/",
+  "/token-validation/page": "/token-validation"
+}

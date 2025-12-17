@@ -1,0 +1,16 @@
+{
+  "headers": {
+    "x-nextjs-stale-time": "300",
+    "x-nextjs-prerender": "1",
+    "x-next-cache-tags": "_N_T_/layout,_N_T_/client-credentials/layout,_N_T_/client-credentials/simulation/layout,_N_T_/client-credentials/simulation/page,_N_T_/client-credentials/simulation"
+  },
+  "segmentPaths": [
+    "/_tree",
+    "/_full",
+    "/client-credentials/simulation/__PAGE__",
+    "/client-credentials/simulation",
+    "/client-credentials",
+    "/_index",
+    "/_head"
+  ]
+}

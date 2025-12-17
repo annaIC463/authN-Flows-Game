@@ -1,0 +1,3 @@
+module.exports=[21290,a=>{a.v({className:"inter_5901b7c6-module__ec5Qua__className",variable:"inter_5901b7c6-module__ec5Qua__variable"})},16849,a=>{"use strict";var b=a.i(16137),c=a.i(21290);let d={className:c.default.className,style:{fontFamily:"'Inter', 'Inter Fallback'",fontStyle:"normal"}};function e({children:a}){return(0,b.jsx)("html",{lang:"en",children:(0,b.jsx)("body",{className:`${d.variable} font-sans antialiased bg-black text-white min-h-screen`,children:a})})}null!=c.default.variable&&(d.variable=c.default.variable),a.s(["default",()=>e,"metadata",0,{title:"AuthN Flows Game",description:"Learn authentication flows through gaming"}],16849)}];
+
+//# sourceMappingURL=%5Broot-of-the-server%5D__71a7a36a._.js.map
