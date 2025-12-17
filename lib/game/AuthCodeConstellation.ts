@@ -340,7 +340,7 @@ export class AuthCodeConstellation implements GameScene {
 
     onClick(x: number, y: number) {
         if (this.state !== 'IDLE' && this.state !== 'AUTHORIZED') return; // Only allow interations at specific points
-        if (this.state === 'COMPLETE') return;
+
 
         const clickedNode = this.nodes.find(node => {
             const dx = node.x - x;
