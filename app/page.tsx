@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Lock, Play, Shield, Server, Smartphone } from "lucide-react";
+import { Play, Shield, Server, FileCheck } from "lucide-react";
 
 export default function Home() {
     return (
@@ -72,23 +72,30 @@ export default function Home() {
                     </Link>
 
                     {/* Level 3: Device Flow (Locked) */}
-                    <div className="group relative p-6 rounded-2xl bg-neutral-900/30 border border-neutral-800 opacity-60 cursor-not-allowed text-left flex flex-col h-64">
+                    {/* Level 3: Token Validation (Unlocked) */}
+                    <Link
+                        href="/token-validation"
+                        className="group relative p-6 rounded-2xl bg-neutral-900/50 border border-neutral-800 hover:border-amber-500/50 transition-all duration-300 hover:shadow-[0_0_30px_-5px_rgba(245,158,11,0.3)] text-left flex flex-col h-64"
+                    >
+                        <div className="absolute inset-0 bg-amber-500/5 opacity-0 group-hover:opacity-100 transition-opacity rounded-2xl" />
                         <div className="flex justify-between items-start mb-4">
-                            <div className="p-3 bg-neutral-800 rounded-xl text-neutral-500">
-                                <Smartphone size={24} />
+                            <div className="p-3 bg-amber-500/10 rounded-xl text-amber-400">
+                                <FileCheck size={24} />
                             </div>
-                            <Lock size={16} className="text-neutral-600" />
+                            <div className="px-2 py-1 bg-green-500/10 text-green-400 text-xs font-medium rounded-full border border-green-500/20">
+                                UNLOCKED
+                            </div>
                         </div>
-                        <h3 className="text-2xl font-semibold mb-2 text-neutral-500">
-                            Device Flow
+                        <h3 className="text-2xl font-semibold mb-2 text-white group-hover:text-amber-200 transition-colors">
+                            The Gatekeeper
                         </h3>
-                        <p className="text-sm text-neutral-600 mb-6 flex-grow">
-                            Input-constrained devices. Use a secondary device to authenticate.
+                        <p className="text-sm text-neutral-400 mb-6 flex-grow">
+                            API Security. Validate tokens, check signatures, and enforce scopes in "Papers, Please" style.
                         </p>
-                        <div className="flex items-center text-sm font-medium text-neutral-600">
-                            Locked
+                        <div className="flex items-center text-sm font-medium text-amber-400 group-hover:translate-x-1 transition-transform">
+                            Start Shift <Play size={16} className="ml-2 fill-current" />
                         </div>
-                    </div>
+                    </Link>
                 </div>
             </div>
         </main>

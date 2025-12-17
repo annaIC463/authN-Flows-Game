@@ -1,9 +1,4 @@
 {
   "/page": "app/page.js",
-  "/client-credentials/platformer/page": "app/client-credentials/platformer/page.js",
-  "/client-credentials/simulation/page": "app/client-credentials/simulation/page.js",
-  "/authorization-code/platformer/page": "app/authorization-code/platformer/page.js",
-  "/client-credentials/page": "app/client-credentials/page.js",
-  "/authorization-code/simulation/page": "app/authorization-code/simulation/page.js",
-  "/authorization-code/page": "app/authorization-code/page.js"
+  "/token-validation/page": "app/token-validation/page.js"
 }
