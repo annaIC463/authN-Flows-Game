@@ -1,3 +1,0 @@
-module.exports=[98196,(a,b,c)=>{let{createClientModuleProxy:d}=a.r(791);a.n(d("[project]/Documents/GPTGames/AuthNflows/node_modules/next/dist/client/components/builtin/global-error.js <module evaluation>"))},15651,(a,b,c)=>{let{createClientModuleProxy:d}=a.r(791);a.n(d("[project]/Documents/GPTGames/AuthNflows/node_modules/next/dist/client/components/builtin/global-error.js"))},16376,a=>{"use strict";a.i(98196);var b=a.i(15651);a.n(b)}];
-
-//# sourceMappingURL=2f9a2_next_dist_client_components_builtin_global-error_ec83abb5.js.map

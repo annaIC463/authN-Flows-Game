@@ -1,3 +1,0 @@
-module.exports=[24206,a=>{a.n(a.i(16849))},98717,a=>{a.n(a.i(65492))},9563,a=>{a.n(a.i(77180))},793,a=>{a.n(a.i(77))},7251,a=>{a.n(a.i(16376))},77,(a,b,c)=>{"use strict";Object.defineProperty(c,"__esModule",{value:!0}),Object.defineProperty(c,"default",{enumerable:!0,get:function(){return f}});let d=a.r(16137),e=a.r(4941);function f(){return(0,d.jsx)(e.HTTPAccessErrorFallback,{status:401,message:"You're not authorized to access this page."})}("function"==typeof c.default||"object"==typeof c.default&&null!==c.default)&&void 0===c.default.__esModule&&(Object.defineProperty(c.default,"__esModule",{value:!0}),Object.assign(c.default,c),b.exports=c.default)}];
-
-//# sourceMappingURL=Documents_GPTGames_AuthNflows_e10df315._.js.map
