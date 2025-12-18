@@ -13,7 +13,7 @@ export default function Home() {
             <div className="z-10 text-center max-w-4xl w-full">
                 <div className="mb-12 space-y-4">
                     <h1 className="text-6xl md:text-8xl font-bold tracking-tighter bg-clip-text text-transparent bg-gradient-to-br from-white to-neutral-500">
-                        AuthN Flows
+                        Auth Mechanics
                     </h1>
                     <p className="text-xl text-neutral-400 max-w-2xl mx-auto">
                         Master the protocols that power the web. Select a flow to begin your training.

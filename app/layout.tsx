@@ -5,8 +5,8 @@ import './globals.css';
 const inter = Inter({ subsets: ['latin'], variable: '--font-inter' });
 
 export const metadata: Metadata = {
-    title: 'AuthN Flows Game',
-    description: 'Learn authentication flows through gaming',
+    title: 'Auth Mechanics',
+    description: 'Master identity protocols through interactive simulations',
 };
 
 export default function RootLayout({
