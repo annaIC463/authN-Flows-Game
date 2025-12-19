@@ -31,8 +31,8 @@ export class EvolutionConstellation implements GameScene {
     private eavesdroppers: { x: number, y: number, radius: number, speedX: number, speedY: number }[] = [];
 
     // Stage 2: Session
-    private flame: { size: number, maxRadius: number, fuel: number } | null = null; // Attached to Server Node
-    private shadow: { x: number, y: number, radius: number, speed: number } | null = null;
+    private flame: any = null; // Unused but kept for type safety if ref needed, removing in main cleanup
+    private shadow: any = null;
     private sessionTimer: number = 0;
     private sessionGoal: number = 10;
 
@@ -40,6 +40,20 @@ export class EvolutionConstellation implements GameScene {
     private implicitPacket: { x: number, y: number, radius: number, label: string, type: 'TOKEN' | 'CODE' } | null = null;
     private xssBots: { angle: number, radius: number, speed: number, offset: number }[] = [];
     private hasFailedImplicit: boolean = false;
+
+    // Stage 2 Updated: The Cookie Pass
+    private sessionStep: 'LOGIN' | 'COOKIE_RETURN' | 'WORKING' = 'LOGIN';
+    private hasCookie: boolean = false;
+    private cookiePos: { x: number, y: number } | null = null;
+    private requestsCompleted: number = 0;
+    private requestsGoal: number = 3;
+    private hijacker: { x: number, y: number, speed: number, radius: number, angle: number } | null = null;
+    private sessionParams = {
+        packetSpeed: 400,
+        hijackerSpeed: 100
+    };
+    // Reusing basicPacket for usage phase
+    private usagePacket: { x: number, y: number, radius: number, label: string } | null = null;
 
     init(ctx: CanvasRenderingContext2D, width: number, height: number) {
         this.width = width;
@@ -65,11 +79,11 @@ export class EvolutionConstellation implements GameScene {
         this.currentStage = 'BASIC_AUTH';
         this.state = 'INTRO';
         this.message = "1. RAW CREDENTIALS";
-        this.subMessage = "Drag 'USER:PASS' to the Server. Watch out for sniffers.";
+        this.subMessage = "Sending passwords through the UNSAFE FRONTEND is risky.";
 
         this.nodes = [
-            { x: this.width * 0.2, y: this.height * 0.6, label: "User / Browser", id: "user", radius: 40, type: 'user' },
-            { x: this.width * 0.8, y: this.height * 0.4, label: "App Server", id: "server", radius: 40, type: 'server' }
+            { x: this.width * 0.25, y: this.height * 0.6, label: "User / Browser", id: "user", radius: 40, type: 'user' },
+            { x: this.width * 0.75, y: this.height * 0.4, label: "App Server", id: "server", radius: 40, type: 'server' }
         ];
 
         this.basicPacket = {
@@ -95,39 +109,50 @@ export class EvolutionConstellation implements GameScene {
     startSession() {
         this.currentStage = 'SESSION';
         this.state = 'INTRO';
-        this.message = "2. SERVER SESSIONS";
-        this.subMessage = "Passwords are gone. Keep the Server Session alive!";
+        this.message = "2. THE SESSION COOKIE";
+        this.subMessage = "Cookie is stored in the FRONTEND. If stolen, it's game over.";
+
+        this.sessionStep = 'LOGIN';
+        this.hasCookie = false;
+        this.requestsCompleted = 0;
+        this.requestsGoal = 3;
+        this.cookiePos = null;
+        this.usagePacket = null;
+        this.hijacker = null;
 
         this.nodes = [
-            { x: this.width * 0.5, y: this.height * 0.5, label: "App Server", id: "server", radius: 60, type: 'server' }
+            { x: this.width * 0.25, y: this.height * 0.5, label: "Browser", id: "user", radius: 50, type: 'user' },
+            { x: this.width * 0.75, y: this.height * 0.5, label: "Server", id: "server", radius: 50, type: 'server' }
         ];
 
-        this.flame = {
-            size: 30,
-            maxRadius: 60,
-            fuel: 100
+        // Hijacker Setup (Patrols the middle)
+        this.hijacker = {
+            x: this.width * 0.5,
+            y: this.height * 0.2,
+            radius: 25,
+            speed: this.sessionParams.hijackerSpeed,
+            angle: Math.PI / 2
         };
 
-        this.shadow = {
-            x: -100,
-            y: Math.random() * this.height,
-            radius: 30,
-            speed: 50
+        // Reuse basic packet for the initial login
+        this.basicPacket = {
+            x: this.nodes[0].x,
+            y: this.nodes[0].y,
+            radius: 20,
+            label: "USER:PASS"
         };
-
-        this.sessionTimer = 0;
     }
 
     startImplicit() {
         this.currentStage = 'IMPLICIT';
         this.state = 'INTRO';
         this.message = "3. THE FRONTEND TRAP";
-        this.subMessage = "We need scale. Auth Server issues a Token. Deliver it.";
+        this.subMessage = "Implicit Flow puts the Token RIGHT in the Unsafe Frontend.";
         this.hasFailedImplicit = false;
 
         this.nodes = [
-            { x: this.width * 0.2, y: this.height * 0.5, label: "Auth Server", id: "auth", radius: 50, type: 'auth' },
-            { x: this.width * 0.8, y: this.height * 0.5, label: "Browser (JS)", id: "browser", radius: 60, type: 'user' }
+            { x: this.width * 0.25, y: this.height * 0.5, label: "Auth Server", id: "auth", radius: 50, type: 'auth' },
+            { x: this.width * 0.75, y: this.height * 0.5, label: "Browser (JS)", id: "browser", radius: 60, type: 'user' }
         ];
 
         this.implicitPacket = {
@@ -197,39 +222,93 @@ export class EvolutionConstellation implements GameScene {
     }
 
     updateSession(dt: number) {
-        if (!this.flame || !this.shadow) return;
+        if (!this.hijacker) return;
+        const userNode = this.nodes[0];
+        const serverNode = this.nodes[1];
 
-        const serverNode = this.nodes.find(n => n.id === 'server');
-        if (!serverNode) return;
+        // 1. Move Hijacker (Patrol Up/Down)
+        this.hijacker.y += this.hijacker.speed * dt * (Math.sin(this.time * 2) > 0 ? 1 : -1);
+        // Keep in bounds
+        if (this.hijacker.y < 100) this.hijacker.y = 100;
+        if (this.hijacker.y > this.height - 100) this.hijacker.y = this.height - 100;
 
-        this.sessionTimer += dt;
-        if (this.sessionTimer >= this.sessionGoal) {
-            this.state = 'SUCCESS';
-            this.message = "SURVIVED... BUT UN-SCALABLE";
-            this.subMessage = "Server state is heavy. We need Stateless Tokens.";
-            setTimeout(() => this.startImplicit(), 3500);
-            return;
-        }
+        // 2. Logic Flow
+        if (this.sessionStep === 'LOGIN') {
+            // Handle drags for login
+            if (this.isDragging && this.basicPacket && this.mousePos) {
+                this.basicPacket.x = this.mousePos.x;
+                this.basicPacket.y = this.mousePos.y;
 
-        // Decay
-        this.flame.fuel -= 12 * dt;
-        this.flame.size = (this.flame.fuel / 100) * this.flame.maxRadius;
+                const dist = Math.hypot(serverNode.x - this.basicPacket.x, serverNode.y - this.basicPacket.y);
+                if (dist < serverNode.radius) {
+                    // Login Success
+                    this.sessionStep = 'COOKIE_RETURN';
+                    this.isDragging = false;
+                    this.basicPacket = null; // Consume credentials
+                    this.cookiePos = { x: serverNode.x, y: serverNode.y };
+                }
+            } else if (this.basicPacket && !this.isDragging) {
+                // Snap back
+                this.basicPacket.x += (userNode.x - this.basicPacket.x) * 5 * dt;
+                this.basicPacket.y += (userNode.y - this.basicPacket.y) * 5 * dt;
+            }
 
-        if (this.flame.fuel <= 0) {
-            this.fail("Session Timed Out. Users logged out.");
-            return;
-        }
+        } else if (this.sessionStep === 'COOKIE_RETURN') {
+            if (this.cookiePos) {
+                const dx = userNode.x - this.cookiePos.x;
+                const dy = userNode.y - this.cookiePos.y;
+                const dist = Math.hypot(dx, dy);
 
-        // Shadow Logic
-        const dx = serverNode.x - this.shadow.x;
-        const dy = serverNode.y - this.shadow.y;
-        const dist = Math.sqrt(dx * dx + dy * dy);
+                if (dist < 10) {
+                    this.hasCookie = true;
+                    this.sessionStep = 'WORKING';
+                    this.message = "LOGGED IN";
+                    this.subMessage = "Cookie stored! Now fetch data WITHOUT credentials.";
+                    this.usagePacket = {
+                        x: userNode.x,
+                        y: userNode.y,
+                        radius: 20,
+                        label: "GET /data"
+                    };
+                } else {
+                    this.cookiePos.x += (dx / dist) * 400 * dt;
+                    this.cookiePos.y += (dy / dist) * 400 * dt;
+                }
+            }
 
-        this.shadow.x += (dx / dist) * this.shadow.speed * dt;
-        this.shadow.y += (dy / dist) * this.shadow.speed * dt;
+        } else if (this.sessionStep === 'WORKING') {
+            if (this.isDragging && this.usagePacket && this.mousePos) {
+                this.usagePacket.x = this.mousePos.x;
+                this.usagePacket.y = this.mousePos.y;
 
-        if (dist < this.shadow.radius + this.flame.size) {
-            this.fail("Session Hijacked! Cookie stolen.");
+                // Hijacker Collision Check
+                const hDist = Math.hypot(this.hijacker.x - this.usagePacket.x, this.hijacker.y - this.usagePacket.y);
+                if (hDist < this.hijacker.radius + this.usagePacket.radius) {
+                    this.fail("Session Hijacked! The thief stole your Cookie.");
+                    return;
+                }
+
+                // Server Arrival
+                const dist = Math.hypot(serverNode.x - this.usagePacket.x, serverNode.y - this.usagePacket.y);
+                if (dist < serverNode.radius) {
+                    this.requestsCompleted++;
+                    this.usagePacket.x = userNode.x; // Returning logic could be fancier but snap back is okay
+                    this.usagePacket.y = userNode.y;
+                    this.isDragging = false;
+
+                    if (this.requestsCompleted >= this.requestsGoal) {
+                        this.state = 'SUCCESS';
+                        this.message = "SESSION SECURE";
+                        this.subMessage = "But Sticky Sessions are hard to scale...";
+                        setTimeout(() => this.startImplicit(), 3500);
+                    } else {
+                        this.subMessage = `Requests: ${this.requestsCompleted}/${this.requestsGoal}`;
+                    }
+                }
+            } else if (this.usagePacket && !this.isDragging) {
+                this.usagePacket.x += (userNode.x - this.usagePacket.x) * 10 * dt;
+                this.usagePacket.y += (userNode.y - this.usagePacket.y) * 10 * dt;
+            }
         }
     }
 
@@ -320,15 +399,30 @@ export class EvolutionConstellation implements GameScene {
     }
 
     drawZones(ctx: CanvasRenderingContext2D) {
-        // Draw dashed line for Frontend/Backend separation
-        const zoneY = this.height * 0.5;
-        ctx.beginPath();
-        // Just a subtle grid or line
-        ctx.strokeStyle = "rgba(255, 255, 255, 0.1)";
+        const midX = this.width * 0.5;
+
+        // LEFT ZONE: UNSAFE FRONTEND
+        ctx.fillStyle = "rgba(239, 68, 68, 0.05)"; // Very subtle red
+        ctx.fillRect(0, 0, midX, this.height);
+
+        ctx.strokeStyle = "rgba(239, 68, 68, 0.2)";
         ctx.lineWidth = 1;
-        // ctx.moveTo(0, zoneY);
-        // ctx.lineTo(this.width, zoneY);
-        // ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(midX, 0); ctx.lineTo(midX, this.height); ctx.stroke();
+
+        // Label Left
+        ctx.fillStyle = "rgba(239, 68, 68, 0.5)";
+        ctx.font = "bold 16px monospace";
+        ctx.textAlign = "left";
+        ctx.fillText("⚠ UNSAFE FRONTEND / BROWSER", 20, 30);
+
+        // RIGHT ZONE: SECURE BACKEND
+        ctx.fillStyle = "rgba(34, 197, 94, 0.05)"; // Very subtle green
+        ctx.fillRect(midX, 0, this.width - midX, this.height);
+
+        // Label Right
+        ctx.fillStyle = "rgba(34, 197, 94, 0.5)";
+        ctx.textAlign = "right";
+        ctx.fillText("🔒 SECURE BACKEND / SERVER", this.width - 20, 30);
     }
 
     drawNodes(ctx: CanvasRenderingContext2D) {
@@ -423,46 +517,64 @@ export class EvolutionConstellation implements GameScene {
     }
 
     drawSessionExtras(ctx: CanvasRenderingContext2D) {
-        const server = this.nodes[0];
-        if (!this.flame || !server) return;
-
-        // Progress Bar
-        const progress = Math.min(this.sessionTimer / this.sessionGoal, 1);
-        ctx.fillStyle = "rgba(255,255,255,0.1)";
-        ctx.fillRect(this.width * 0.3, 80, this.width * 0.4, 6);
-        ctx.fillStyle = "#3b82f6";
-        ctx.fillRect(this.width * 0.3, 80, (this.width * 0.4) * progress, 6);
-
-        // Flame inside Server Node
-        const flicker = Math.random() * 5;
-        ctx.fillStyle = this.flame.fuel > 30 ? "#f97316" : "#ef4444";
-
-        ctx.beginPath();
-        ctx.arc(server.x, server.y, this.flame.size + flicker, 0, Math.PI * 2);
-        ctx.fill();
-
-        ctx.fillStyle = "white";
-        ctx.font = "bold 16px Inter";
-        ctx.fillText(`${Math.ceil(this.flame.fuel)}%`, server.x, server.y + 5);
-
-        // Shadow
-        if (this.shadow) {
-            ctx.fillStyle = "rgba(0, 0, 0, 0.8)";
-            ctx.strokeStyle = "#8b5cf6"; // Purple glow
-            ctx.lineWidth = 2;
-            ctx.shadowBlur = 10;
-            ctx.shadowColor = "#8b5cf6";
-
+        // Draw Hijacker
+        if (this.hijacker) {
+            ctx.fillStyle = "black";
+            ctx.strokeStyle = "#8b5cf6"; // Purple
+            ctx.lineWidth = 3;
             ctx.beginPath();
-            ctx.arc(this.shadow.x, this.shadow.y, this.shadow.radius, 0, Math.PI * 2);
+            ctx.arc(this.hijacker.x, this.hijacker.y, this.hijacker.radius, 0, Math.PI * 2);
             ctx.fill();
             ctx.stroke();
 
-            ctx.shadowBlur = 0;
-            ctx.fillStyle = "#a855f7";
-            ctx.font = "12px Inter";
-            ctx.fillText("Session Hijacker", this.shadow.x, this.shadow.y - 40);
+            ctx.fillStyle = "#8b5cf6";
+            ctx.font = "bold 12px monospace";
+            ctx.fillText("HIJACKER", this.hijacker.x, this.hijacker.y - 35);
         }
+
+        // 1. Packet (Login or Usage)
+        let cleanPacket = this.sessionStep === 'LOGIN' ? this.basicPacket : this.usagePacket;
+        if (cleanPacket) {
+            ctx.fillStyle = this.sessionStep === 'LOGIN' ? "#ef4444" : "#3b82f6"; // Red (Creds) or Blue (Request)
+            ctx.beginPath();
+            ctx.arc(cleanPacket.x, cleanPacket.y, cleanPacket.radius, 0, Math.PI * 2);
+            ctx.fill();
+
+            ctx.fillStyle = "white";
+            ctx.font = "bold 10px monospace";
+            ctx.fillText(cleanPacket.label, cleanPacket.x, cleanPacket.y + 4);
+
+            // If Working and dragging, show attached cookie
+            if (this.sessionStep === 'WORKING' && this.hasCookie) {
+                this.drawCookie(ctx, cleanPacket.x + 15, cleanPacket.y - 15);
+            }
+        }
+
+        // 2. Cookie Return Animation
+        if (this.sessionStep === 'COOKIE_RETURN' && this.cookiePos) {
+            this.drawCookie(ctx, this.cookiePos.x, this.cookiePos.y);
+        }
+
+        // 3. User's Cookie Inventory (if held)
+        if (this.hasCookie && this.sessionStep === 'WORKING' && !this.isDragging) {
+            const user = this.nodes[0];
+            this.drawCookie(ctx, user.x + 40, user.y - 40);
+        }
+    }
+
+    drawCookie(ctx: CanvasRenderingContext2D, x: number, y: number) {
+        ctx.fillStyle = "#22c55e"; // Green
+        ctx.beginPath();
+        ctx.arc(x, y, 12, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = "#14532d";
+        ctx.lineWidth = 2;
+        ctx.stroke();
+        // Chips
+        ctx.fillStyle = "#14532d";
+        ctx.beginPath(); ctx.arc(x - 4, y - 4, 2, 0, Math.PI * 2); ctx.fill();
+        ctx.beginPath(); ctx.arc(x + 5, y - 2, 2, 0, Math.PI * 2); ctx.fill();
+        ctx.beginPath(); ctx.arc(x, y + 5, 2, 0, Math.PI * 2); ctx.fill();
     }
 
     drawImplicitExtras(ctx: CanvasRenderingContext2D) {
@@ -584,23 +696,23 @@ export class EvolutionConstellation implements GameScene {
 
         // Session Interaction
         if (this.currentStage === 'SESSION' && this.state === 'PLAYING') {
-            const server = this.nodes[0];
-            if (this.flame && server) {
-                const dx = x - server.x;
-                const dy = y - server.y;
-                if (Math.hypot(dx, dy) < server.radius + 20) {
-                    this.flame.fuel = Math.min(this.flame.fuel + 20, 100);
+            // Check dragging for Basic Packet (Login)
+            if (this.sessionStep === 'LOGIN' && this.basicPacket) {
+                const dist = Math.hypot(x - this.basicPacket.x, y - this.basicPacket.y);
+                if (dist < this.basicPacket.radius * 2) {
+                    this.isDragging = true;
+                    this.dragTarget = 'basicPacket';
+                    return;
+                }
+            }
 
-                    // Knockback
-                    if (this.shadow) {
-                        const sx = this.shadow.x - server.x;
-                        const sy = this.shadow.y - server.y;
-                        const dist = Math.hypot(sx, sy);
-                        if (dist > 0) {
-                            this.shadow.x += (sx / dist) * 120;
-                            this.shadow.y += (sy / dist) * 120;
-                        }
-                    }
+            // Check dragging for Usage Packet
+            if (this.sessionStep === 'WORKING' && this.usagePacket) {
+                const dist = Math.hypot(x - this.usagePacket.x, y - this.usagePacket.y);
+                if (dist < this.usagePacket.radius * 2) {
+                    this.isDragging = true;
+                    this.dragTarget = 'usagePacket';
+                    return;
                 }
             }
         }

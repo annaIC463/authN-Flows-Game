@@ -31,8 +31,8 @@ export default function Home() {
                             <div className="p-3 bg-yellow-500/10 rounded-xl text-yellow-400">
                                 <Shield size={24} />
                             </div>
-                            <div className="px-2 py-1 bg-green-500/10 text-green-400 text-xs font-medium rounded-full border border-green-500/20">
-                                NEW
+                            <div className="px-2 py-1 bg-amber-500/10 text-amber-400 text-xs font-medium rounded-full border border-amber-500/20">
+                                IN PROGRESS
                             </div>
                         </div>
                         <h3 className="text-2xl font-semibold mb-2 text-white group-hover:text-yellow-200 transition-colors">
