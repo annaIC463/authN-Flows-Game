@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { ArrowLeft, Check, X, ShieldAlert, Clock, Lock } from "lucide-react";
+import { ArrowLeft, Check, X, ShieldAlert, Clock, Lock, Building, Megaphone } from "lucide-react";
 
 // --- Types ---
 type Scope = "read:users" | "write:users" | "delete:users" | "read:orders" | "write:orders" | "admin";
@@ -29,7 +29,7 @@ interface Request {
 }
 
 // --- Logic ---
-const VALID_AUDIENCE = "api.myapp.com";
+const VALID_AUDIENCE = "api.auth-mechanics.com";
 const SCOPES: Scope[] = ["read:users", "write:users", "delete:users", "read:orders", "write:orders", "admin"];
 const NAMES = ["Alice", "Bob", "Charlie", "Dave", "Eve", "Mallory", "Trent"];
 
@@ -74,14 +74,18 @@ const generateRequest = (currentTime: number): Request => {
     let defectType = "none";
     if (isBad) {
         const defectRoll = Math.random();
-        if (defectRoll < 0.33) {
+        if (defectRoll < 0.25) {
             // EXPIRED
             exp = currentTime - 300;
             defectType = "expired";
-        } else if (defectRoll < 0.66) {
+        } else if (defectRoll < 0.50) {
             // BAD SIGNATURE
             sig = "invalid";
             defectType = "signature";
+        } else if (defectRoll < 0.75) {
+            // WRONG AUDIENCE
+            aud = ["auth0.auth-mechanics.com", "billing.auth-mechanics.com", "google.com", "facebook.com"][Math.floor(Math.random() * 4)];
+            defectType = "audience";
         } else {
             // MISSING SCOPE
             // Remove required scope if present
@@ -142,8 +146,9 @@ export default function TokenValidationGame() {
         const isExpired = request.token.payload.exp < currentTime;
         const isSigInvalid = request.token.signature === "invalid";
         const hasScope = request.token.payload.scope.includes(request.requiredScope);
+        const isAudInvalid = request.token.payload.aud !== VALID_AUDIENCE;
 
-        const isValid = !isExpired && !isSigInvalid && hasScope;
+        const isValid = !isExpired && !isSigInvalid && hasScope && !isAudInvalid;
 
         let points = 0;
         let msg = "";
@@ -158,6 +163,7 @@ export default function TokenValidationGame() {
                 type = "failure";
                 if (isExpired) msg = "SECURITY BREACH! Token was EXPIRED!";
                 else if (isSigInvalid) msg = "SECURITY BREACH! Invalid SIGNATURE!";
+                else if (isAudInvalid) msg = "SECURITY BREACH! Wrong AUDIENCE!";
                 else if (!hasScope) msg = "SECURITY BREACH! Insufficient SCOPE!";
             }
         } else {
@@ -190,7 +196,7 @@ export default function TokenValidationGame() {
     return (
         <main className="min-h-screen bg-neutral-950 text-neutral-200 font-mono p-4 flex flex-col items-center">
             {/* Header / HUD */}
-            <div className="w-full max-w-4xl flex justify-between items-center mb-8 border-b border-neutral-800 pb-4">
+            <div className="w-full max-w-4xl flex justify-between items-center mb-6 border-b border-neutral-800 pb-4">
                 <Link href="/" className="flex items-center text-neutral-500 hover:text-white transition-colors">
                     <ArrowLeft size={20} className="mr-2" /> Back
                 </Link>
@@ -203,6 +209,17 @@ export default function TokenValidationGame() {
                         <ShieldAlert size={20} className={`mr-2 ${score < 0 ? 'text-red-500' : 'text-green-500'}`} />
                         <span className={score < 0 ? 'text-red-400' : 'text-green-400'}>Score: {score}</span>
                     </div>
+                </div>
+            </div>
+
+            {/* Identity Context */}
+            <div className="bg-neutral-900 border border-blue-900/30 rounded-full px-6 py-2 mb-8 flex items-center space-x-3 shadow-[0_0_15px_-3px_rgba(37,99,235,0.3)]">
+                <div className="bg-blue-500/10 p-1.5 rounded-full">
+                    <Megaphone size={18} className="text-blue-400" />
+                </div>
+                <div className="text-sm">
+                    <span className="text-neutral-500 mr-2">OUR IDENTITY (AUD):</span>
+                    <span className="text-blue-300 font-bold tracking-wide">{VALID_AUDIENCE}</span>
                 </div>
             </div>
 
@@ -260,8 +277,11 @@ export default function TokenValidationGame() {
                                         <span className="text-xs bg-red-100 text-red-600 px-1 rounded border border-red-200 font-bold">EXPIRED</span>
                                     )}
                                 </div>
-                                <div className="flex justify-between">
-                                    <span>"aud": "{request.token.payload.aud}",</span>
+                                <div className="flex justify-between items-center bg-blue-50 -mx-1 px-1 group cursor-help relative">
+                                    <span>"aud": "<span className={request.token.payload.aud === VALID_AUDIENCE ? "font-bold text-green-700" : "font-bold text-red-600"}>{request.token.payload.aud}</span>",</span>
+                                    {request.token.payload.aud !== VALID_AUDIENCE && (
+                                        <div className="absolute right-0 top-0 -mt-6 bg-red-800 text-white text-[10px] px-2 py-0.5 rounded shadow">INVALID AUD</div>
+                                    )}
                                 </div>
                                 <div>
                                     "scope": [

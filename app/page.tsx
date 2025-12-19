@@ -21,6 +21,30 @@ export default function Home() {
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6 w-full">
+                    {/* Level 0: Evolution of Auth */}
+                    <Link
+                        href="/evolution"
+                        className="group relative p-6 rounded-2xl bg-neutral-900/50 border border-neutral-800 hover:border-yellow-500/50 transition-all duration-300 hover:shadow-[0_0_30px_-5px_rgba(234,179,8,0.3)] text-left flex flex-col h-64"
+                    >
+                        <div className="absolute inset-0 bg-yellow-500/5 opacity-0 group-hover:opacity-100 transition-opacity rounded-2xl" />
+                        <div className="flex justify-between items-start mb-4">
+                            <div className="p-3 bg-yellow-500/10 rounded-xl text-yellow-400">
+                                <Shield size={24} />
+                            </div>
+                            <div className="px-2 py-1 bg-green-500/10 text-green-400 text-xs font-medium rounded-full border border-green-500/20">
+                                NEW
+                            </div>
+                        </div>
+                        <h3 className="text-2xl font-semibold mb-2 text-white group-hover:text-yellow-200 transition-colors">
+                            The Evolution
+                        </h3>
+                        <p className="text-sm text-neutral-400 mb-6 flex-grow">
+                            Experience the history of auth. From Basic Auth to Cookies to SAML.
+                        </p>
+                        <div className="flex items-center text-sm font-medium text-yellow-400 group-hover:translate-x-1 transition-transform">
+                            Travel Back in Time <Play size={16} className="ml-2 fill-current" />
+                        </div>
+                    </Link>
                     {/* Level 1: Client Credentials */}
                     <Link
                         href="/client-credentials"
