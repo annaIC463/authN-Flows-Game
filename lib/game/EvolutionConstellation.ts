@@ -413,7 +413,7 @@ export class EvolutionConstellation implements GameScene {
         ctx.fillStyle = "rgba(239, 68, 68, 0.5)";
         ctx.font = "bold 16px monospace";
         ctx.textAlign = "left";
-        ctx.fillText("⚠ UNSAFE FRONTEND / BROWSER", 20, 30);
+        ctx.fillText("⚠ UNSAFE FRONTEND / BROWSER", 20, this.height - 30);
 
         // RIGHT ZONE: SECURE BACKEND
         ctx.fillStyle = "rgba(34, 197, 94, 0.05)"; // Very subtle green
@@ -422,7 +422,7 @@ export class EvolutionConstellation implements GameScene {
         // Label Right
         ctx.fillStyle = "rgba(34, 197, 94, 0.5)";
         ctx.textAlign = "right";
-        ctx.fillText("🔒 SECURE BACKEND / SERVER", this.width - 20, 30);
+        ctx.fillText("🔒 SECURE BACKEND / SERVER", this.width - 20, this.height - 30);
     }
 
     drawNodes(ctx: CanvasRenderingContext2D) {
