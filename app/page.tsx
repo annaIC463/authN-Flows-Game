@@ -39,7 +39,7 @@ export default function Home() {
                             The Evolution
                         </h3>
                         <p className="text-sm text-neutral-400 mb-6 flex-grow">
-                            Experience the history of auth. From Basic Auth to Cookies to SAML.
+                            Experience the history of auth. From Basic Auth to Cookies to Modern OIDC.
                         </p>
                         <div className="flex items-center text-sm font-medium text-yellow-400 group-hover:translate-x-1 transition-transform">
                             Travel Back in Time <Play size={16} className="ml-2 fill-current" />

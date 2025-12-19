@@ -31,7 +31,7 @@ export class AuthCodeConstellation implements GameScene {
             { x: width * 0.2, y: height * 0.5, label: "Client App", id: "app", radius: 30, type: 'server' },
             { x: width * 0.5, y: height * 0.3, label: "Auth0 Tenant", id: "auth", radius: 35, type: 'auth' },
             { x: width * 0.8, y: height * 0.5, label: "API", id: "api", radius: 30, type: 'resource' },
-            { x: width * 0.5, y: height * 0.75, label: "User / Browser", id: "user", radius: 25, type: 'user' }
+            { x: width * 0.5, y: height * 0.82, label: "User / Browser", id: "user", radius: 25, type: 'user' }
         ];
 
         // Stars
@@ -139,6 +139,7 @@ export class AuthCodeConstellation implements GameScene {
                         type: 'exchange',
                         label: 'Code + Secret'
                     });
+                    this.message = "Back-channel Exchange: Token stays on the Server.";
                 }
             }, 500);
         }
@@ -161,7 +162,7 @@ export class AuthCodeConstellation implements GameScene {
         else if (conn.type === 'token' && conn.to.id === 'app') {
             // App has token!
             this.state = 'AUTHORIZED';
-            this.message = "Step 5: App uses Token to access API";
+            this.message = "Success! Token is safe from the Browser.";
         }
         else if (conn.type === 'access' && conn.to.id === 'api') {
             this.state = 'COMPLETE';
@@ -186,7 +187,7 @@ export class AuthCodeConstellation implements GameScene {
         ctx.globalAlpha = 1.0;
 
         // Draw Front-End / Back-End Zones
-        const zoneY = ctx.canvas.height * 0.65;
+        const zoneY = ctx.canvas.height * 0.60;
 
         // Separator Line
         ctx.beginPath();
@@ -200,10 +201,21 @@ export class AuthCodeConstellation implements GameScene {
 
         // Zone Labels
         ctx.font = "bold 14px Inter";
-        ctx.fillStyle = "rgba(255, 255, 255, 0.3)";
+        ctx.fillStyle = "rgba(34, 197, 94, 0.5)"; // Green
         ctx.textAlign = "left";
-        ctx.fillText("BACK-END (Trusted Zone)", 20, zoneY - 15);
-        ctx.fillText("FRONT-END (Untrusted Zone)", 20, zoneY + 25);
+        ctx.fillText("🔒 SECURE BACKEND / SERVER", 20, zoneY - 15);
+
+        ctx.fillStyle = "rgba(239, 68, 68, 0.5)"; // Red
+        ctx.fillText("⚠ UNSAFE FRONTEND / BROWSER", 20, zoneY + 25);
+
+        // Colorize Backgrounds
+        // Top (Secure)
+        ctx.fillStyle = "rgba(34, 197, 94, 0.05)";
+        ctx.fillRect(0, 0, ctx.canvas.width, zoneY);
+
+        // Bottom (Unsafe)
+        ctx.fillStyle = "rgba(239, 68, 68, 0.05)";
+        ctx.fillRect(0, zoneY, ctx.canvas.width, ctx.canvas.height - zoneY);
 
 
         // Draw State/Message
