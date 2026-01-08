@@ -10,12 +10,21 @@ export class AuthCodePlatformer implements GameScene {
     // Platformer State
     private player = { x: 50, y: 100, width: 30, height: 30, vx: 0, vy: 0, grounded: false, hasCode: false, hasToken: false, facingRight: true };
     private keys = { left: false, right: false, up: false };
-    private platforms: { x: number, y: number, w: number, h: number, type?: 'ground' | 'app' | 'auth' | 'api' }[] = [];
+    private platforms: { x: number, y: number, w: number, h: number, type?: 'ground' | 'app' | 'auth' | 'api' | 'kp_generator' }[] = [];
     private items: Collectable[] = []; // Only the Code is an item for now
     private projectiles: Projectile[] = []; // New: Projectiles for back-channel
     private winState: boolean = false;
     private message: string = "Go to Auth0 Cloud (Purple) to Login";
     private exchangeInProgress: boolean = false; // Prevent double exchange
+    private variant: 'standard' | 'pkce';
+
+    // PKCE State
+    private hasVerifier: boolean = false;
+    private hasChallenge: boolean = false;
+
+    constructor(variant: 'standard' | 'pkce' = 'standard') {
+        this.variant = variant;
+    }
 
     init(ctx: CanvasRenderingContext2D, width: number, height: number) {
         this.initPlatformer(width, height);
@@ -42,6 +51,11 @@ export class AuthCodePlatformer implements GameScene {
             { x: width - 200, y: height - 150, w: 150, h: 20, type: 'api' }, // API Vault
         ];
 
+        // PKCE: Add a Generator Platform in the App Base
+        if (this.variant === 'pkce') {
+            this.platforms.push({ x: 50, y: height - 250, w: 60, h: 10, type: 'kp_generator' });
+        }
+
         // Items - Code spawns on the Auth Cloud
         this.items = [
             { x: 700, y: height - 540, w: 20, h: 30, type: 'code', collected: false }
@@ -56,7 +70,15 @@ export class AuthCodePlatformer implements GameScene {
         this.player.hasToken = false;
         this.winState = false;
         this.exchangeInProgress = false;
-        this.message = "Jump to the Auth Cloud to Login!";
+        this.exchangeInProgress = false;
+        this.hasVerifier = false;
+        this.hasChallenge = false;
+
+        if (this.variant === 'pkce') {
+            this.message = "First: Jump on the small platform to Generate PKCE Keys!";
+        } else {
+            this.message = "Go to Auth0 Cloud (Purple) to Login";
+        }
     }
 
     update(dt: number) {
@@ -119,9 +141,18 @@ export class AuthCodePlatformer implements GameScene {
                 if (plat.type === 'app') {
                     // If we have Code but no Token, start Back-channel exchange!
                     if (this.player.hasCode && !this.player.hasToken && !this.exchangeInProgress) {
+
+                        // PKCE Check
+                        if (this.variant === 'pkce' && !this.hasVerifier) {
+                            this.message = "Missing Code Verifier! Cannot exchange.";
+                            return;
+                        }
+
                         this.player.hasCode = false; // Hand over code
                         this.exchangeInProgress = true;
-                        this.message = "App is exchanging Code for Token via Back-channel...";
+                        this.message = this.variant === 'pkce'
+                            ? "Exchanging Code + Verifier for Token..."
+                            : "App is exchanging Code for Token via Back-channel...";
 
                         // Spawn Projectile: App -> Auth
                         // Find App and Auth centers
@@ -140,6 +171,15 @@ export class AuthCodePlatformer implements GameScene {
                     }
                 }
 
+                // PKCE Generator Interaction
+                if (plat.type === 'kp_generator' && this.variant === 'pkce') {
+                    if (!this.hasVerifier) {
+                        this.hasVerifier = true;
+                        this.hasChallenge = true;
+                        this.message = "Generated Keys! Verifier (Key) kept, Challenge (Hash) ready.";
+                    }
+                }
+
                 // 2. API Platform Interaction
                 if (plat.type === 'api') {
                     if (this.player.hasToken) {
@@ -152,9 +192,18 @@ export class AuthCodePlatformer implements GameScene {
         // Item Collection (The Code)
         for (const item of this.items) {
             if (!item.collected && this.checkCollision(this.player, item)) {
-                item.collected = true;
-                this.player.hasCode = true;
-                this.message = "Got Authorization Code! Return to App Base.";
+                if (this.variant === 'pkce' && !this.hasChallenge) {
+                    this.message = "Auth Server needs Challenge! Go generate keys first.";
+                } else {
+                    item.collected = true;
+                    this.player.hasCode = true;
+                    if (this.variant === 'pkce') {
+                        this.message = "Got Authorization Code! Challenge Verified.";
+                        this.hasChallenge = false; // Consumed (sent to server basically)
+                    } else {
+                        this.message = "Got Authorization Code! Return to App Base.";
+                    }
+                }
             }
         }
 
@@ -233,6 +282,15 @@ export class AuthCodePlatformer implements GameScene {
             // Icon for API
             if (plat.type === 'api') {
                 this.drawDatabaseIcon(ctx, plat.x + plat.w / 2, plat.y - 30);
+            }
+
+            // PKCE Generator Visual
+            if (plat.type === 'kp_generator') {
+                ctx.fillStyle = "#f43f5e"; // Rose
+                ctx.fillRect(plat.x + 10, plat.y - 10, 40, 10);
+                ctx.fillStyle = "white";
+                ctx.font = "10px monospace";
+                ctx.fillText("PKCE", plat.x + plat.w / 2, plat.y - 2);
             }
         }
 
@@ -339,6 +397,29 @@ export class AuthCodePlatformer implements GameScene {
                 ctx.stroke();
             }
             ctx.fillStyle = "white"; ctx.fillText("Token", 80, hudY + 70);
+
+            // PKCE HUD
+            if (this.variant === 'pkce') {
+                // Verifier
+                if (this.hasVerifier) {
+                    ctx.fillStyle = "#f43f5e"; // Rose
+                    ctx.fillText("KEY", 130, hudY + 50);
+                } else {
+                    ctx.fillStyle = "#475569";
+                    ctx.fillText("---", 130, hudY + 50);
+                }
+                ctx.fillStyle = "white"; ctx.fillText("Verifier", 130, hudY + 70);
+
+                // Challenge
+                if (this.hasChallenge) {
+                    ctx.fillStyle = "#fcd34d"; // Amber
+                    ctx.fillText("HASH", 180, hudY + 50);
+                } else {
+                    ctx.fillStyle = "#475569";
+                    ctx.fillText("---", 180, hudY + 50);
+                }
+                ctx.fillStyle = "white"; ctx.fillText("Challenge", 180, hudY + 70);
+            }
         }
     }
 

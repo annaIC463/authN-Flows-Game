@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Gamepad2, Network, ArrowLeft } from "lucide-react";
+import { Gamepad2, Network, ArrowLeft, ShieldCheck } from "lucide-react";
 
 export default function AuthCodeSelectionPage() {
     return (
@@ -48,6 +48,21 @@ export default function AuthCodeSelectionPage() {
                             <h2 className="text-2xl font-bold mb-3 text-white">Platformer Mode</h2>
                             <p className="text-neutral-400">
                                 The journey of the User Agent. Physically travel to the Auth Server, get the code, and bring it back safely.
+                            </p>
+                        </div>
+                    </Link>
+                </div>
+
+                <div className="mt-8 flex justify-center">
+                    {/* PKCE Mode */}
+                    <Link href="/authorization-code/pkce" className="group w-full max-w-md">
+                        <div className="bg-neutral-900/50 border border-neutral-800 rounded-2xl p-8 hover:border-rose-500 transition-all duration-300 h-full flex flex-col items-center text-center hover:shadow-[0_0_30px_-5px_rgba(244,63,94,0.3)]">
+                            <div className="p-4 bg-rose-500/10 rounded-full mb-6 text-rose-400 group-hover:scale-110 transition-transform">
+                                <ShieldCheck size={48} />
+                            </div>
+                            <h2 className="text-2xl font-bold mb-3 text-white">PKCE Variation</h2>
+                            <p className="text-neutral-400">
+                                Proof Key for Code Exchange. See how Mobile & SPA apps secure the code flow using a secret verifier.
                             </p>
                         </div>
                     </Link>

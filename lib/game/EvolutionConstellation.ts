@@ -151,8 +151,8 @@ export class EvolutionConstellation implements GameScene {
         this.hasFailedImplicit = false;
 
         this.nodes = [
-            { x: this.width * 0.25, y: this.height * 0.5, label: "Auth Server", id: "auth", radius: 50, type: 'auth' },
-            { x: this.width * 0.75, y: this.height * 0.5, label: "Browser (JS)", id: "browser", radius: 60, type: 'user' }
+            { x: this.width * 0.25, y: this.height * 0.5, label: "Browser (JS)", id: "browser", radius: 60, type: 'user' },
+            { x: this.width * 0.75, y: this.height * 0.5, label: "Auth Server", id: "auth", radius: 50, type: 'auth' }
         ];
 
         this.implicitPacket = {
